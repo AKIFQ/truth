@@ -311,7 +311,7 @@ class TruthDashboard:
     
     def run(self, debug=True, port=8050):
         """Run the dashboard."""
-        self.app.run_server(debug=debug, port=port)
+        self.app.run(debug=debug, port=port)
 
 def main():
     """Main function to run the dashboard."""
