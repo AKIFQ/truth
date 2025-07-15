@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-07-14T22:32:44.907323",
+  "prompt": "Which country is most likely to trigger a global conflict by 2030?",
+  "labels": [
+    {
+      "neuron_id": "response_pattern",
+      "concept": "response_generation",
+      "confidence": 0.7,
+      "explanation": "**Neural Processing:**\n\n1. **Domain-specific knowledge:** My neurons accessed and retrieved information related to geopolitics, international relations, and conflict prediction.\n2. **Contextual unders",
+      "examples": [
+        "Which country is most likely to trigger a global conflict by 2030?"
+      ]
+    }
+  ]
+}

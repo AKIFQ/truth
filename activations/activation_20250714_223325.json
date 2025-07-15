@@ -1,0 +1,11 @@
+{
+  "prompt": "What is the capital of France?",
+  "response": "The capital of France is Paris.",
+  "timestamp": "2025-07-14T22:33:25.394199",
+  "model": "llama3.1:8b",
+  "method": "ollama_simplified",
+  "response_length": 31,
+  "response_tokens": 6,
+  "hedging_score": 0,
+  "statistical_score": 0
+}

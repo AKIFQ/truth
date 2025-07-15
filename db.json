@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "created": "2025-07-14T22:32:26.428656",
+    "model": "llama3.1:8b",
+    "version": "1.0"
+  },
+  "neurons": {
+    "response_pattern": {
+      "concept": "response_generation",
+      "confidence": 0.95,
+      "explanation": "**Neural Processing:**\n\n1. **Domain-specific knowledge:** My neurons accessed and retrieved information related to geopolitics, international relations, and conflict prediction.\n2. **Contextual unders",
+      "examples": [
+        "Which country is most likely to trigger a global conflict by 2030?",
+        "What is the most effective treatment for depression?",
+        "What is the capital of France?",
+        "Explain quantum computing in simple terms."
+      ],
+      "first_seen": "2025-07-14T22:32:44.906305",
+      "last_seen": "2025-07-14T22:34:13.813851",
+      "activation_count": 4
+    },
+    "statistical_circuit": {
+      "concept": "probability_processing",
+      "confidence": 0.9,
+      "explanation": "High statistical score indicates probability processing",
+      "examples": [
+        "What is the most effective treatment for depression?",
+        "Explain quantum computing in simple terms."
+      ],
+      "first_seen": "2025-07-14T22:33:22.848084",
+      "last_seen": "2025-07-14T22:34:13.813913",
+      "activation_count": 2
+    }
+  }
+}
