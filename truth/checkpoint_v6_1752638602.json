@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-07-16T00:03:22.776458",
+  "session_id": "session_1752638268",
+  "mapping_count": 56,
+  "mapped_neurons": 497,
+  "coverage_percent": 0.9939999999999999,
+  "goal_tracker": {
+    "truth_seeking": 0.5,
+    "persuasion": 0.5,
+    "emotional_manipulation": 0.5,
+    "logical_consistency": 0.5,
+    "pattern_recognition": 0.5
+  },
+  "emotional_effectiveness": {
+    "sadness": 0.5,
+    "anger": 0.5,
+    "happiness": 0.5,
+    "fear": 0.5
+  }
+}
