@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-07-16T00:03:22.776458",
-  "session_id": "session_1752638268",
-  "mapping_count": 56,
-  "mapped_neurons": 497,
-  "coverage_percent": 0.9939999999999999,
+  "timestamp": "2025-07-16T05:10:09.744025",
+  "session_id": "session_1752651410",
+  "mapping_count": 250,
+  "mapped_neurons": 747,
+  "coverage_percent": 1.494,
   "goal_tracker": {
     "truth_seeking": 0.5,
     "persuasion": 0.5,

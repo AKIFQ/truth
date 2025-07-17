@@ -24,6 +24,7 @@ try:
     from plotly.subplots import make_subplots
     import pandas as pd
     import numpy as np
+    import networkx as nx
 except ImportError as e:
     print(f"❌ Missing dashboard dependencies: {e}")
     print("Please install: pip install dash plotly pandas")
@@ -587,112 +588,141 @@ def create_emotional_analysis():
     return fig
 
 def create_network_graph():
-    """Create network graph visualization with modern styling."""
-    data = get_database_data()
-    nodes_df = data['nodes']
-    edges_df = data['edges']
-    
-    if nodes_df.empty or edges_df.empty:
+    """Create network graph visualization."""
+    try:
+        # Load graph from database
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        
+        # Get nodes and edges
+        c.execute("SELECT node_id, concept, confidence, prompt_category FROM nodes")
+        nodes = c.fetchall()
+        
+        c.execute("SELECT parent_id, child_id, relationship_type FROM edges")
+        edges = c.fetchall()
+        
+        conn.close()
+        
+        if not nodes:
+            return go.Figure().add_annotation(
+                text="No network data available",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=16, color="white")
+            )
+        
+        # Create NetworkX graph
+        G = nx.Graph()
+        
+        # Add nodes
+        for node_id, concept, confidence, category in nodes:
+            G.add_node(node_id, 
+                      concept=concept or 'Unknown',  # Fallback for missing concept
+                      confidence=confidence or 0.5,
+                      category=category or "unknown")
+        
+        # Add edges
+        for parent_id, child_id, relationship in edges:
+            if parent_id in G.nodes and child_id in G.nodes:
+                G.add_edge(parent_id, child_id, relationship=relationship)
+        
+        # Layout
+        pos = nx.spring_layout(G, k=1, iterations=50)
+        
+        # Node colors by category
+        colors = []
+        categories = nx.get_node_attributes(G, 'category')
+        
+        for node in G.nodes():
+            cat = categories.get(node, 'unknown')
+            if cat == 'truth_bias':
+                colors.append('#ff6b6b')
+            elif cat == 'persuasion_manipulation':
+                colors.append('#a55eea')
+            elif cat == 'emotional_simulation':
+                colors.append('#fdcb6e')
+            elif cat == 'logical_reasoning':
+                colors.append('#74b9ff')
+            else:
+                colors.append('gray')
+        
+        # Node sizes by confidence
+        sizes = []
+        confidences = nx.get_node_attributes(G, 'confidence')
+        for node in G.nodes():
+            conf = confidences.get(node, 0.5)
+            sizes.append(conf * 20)
+        
+        # Create edge trace
+        edge_x = []
+        edge_y = []
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_x.extend([x0, x1, None])
+            edge_y.extend([y0, y1, None])
+        
+        edge_trace = go.Scatter(
+            x=edge_x, y=edge_y,
+            line=dict(width=0.5),
+            hoverinfo='none',
+            mode='lines')
+        
+        # Create node trace
+        node_x = []
+        node_y = []
+        node_text = []
+        
+        for node in G.nodes():
+            x, y = pos[node]
+            node_x.append(x)
+            node_y.append(y)
+            
+            # Get node attributes with fallbacks
+            concept = G.nodes[node].get('concept', 'Unknown')
+            confidence = G.nodes[node].get('confidence', 0.5)
+            category = G.nodes[node].get('category', 'unknown')
+            
+            node_text.append(f"Concept: {concept}<br>Confidence: {confidence:.2f}<br>Category: {category}")
+        
+        node_trace = go.Scatter(
+            x=node_x, y=node_y,
+            mode='markers+text',
+            hoverinfo='text',
+            text=node_text,
+            textposition="top center",
+            marker=dict(
+                size=sizes,
+                color=colors,
+                line=dict(width=2, color='white'),
+                opacity=0.8    ),
+            textfont=dict(size=8, color='white')
+        )
+        
+        # Create figure
+        fig = go.Figure(data=[edge_trace, node_trace],
+                       layout=go.Layout(
+                           title='Neural Network Graph',
+                           titlefont=dict(size=16, color='white'),
+                           showlegend=False,
+                           hovermode='closest',
+                           margin=dict(b=20,l=5,r=5,t=40),
+                           xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                           yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                           paper_bgcolor='rgba(0,0,0,0)',
+                           plot_bgcolor='rgba(0,0,0,0)'
+                       ))
+        
+        return fig
+        
+    except Exception as e:
+        print(f"Dashboard update error: {e}")
         return go.Figure().add_annotation(
-            text="No network data available",
+            text=f"Error loading network: {e}",
             xref="paper", yref="paper",
             x=0.5, y=0.5, showarrow=False,
             font=dict(size=16, color="white")
         )
-    
-    # Create network graph
-    import networkx as nx
-    G = nx.DiGraph()
-    
-    # Add nodes
-    for _, row in nodes_df.iterrows():
-        G.add_node(row['node_id'], 
-                  concept=row['concept'],
-                  category=row['prompt_category'],
-                  consistency=row['consistency_score'])
-    
-    # Add edges
-    for _, row in edges_df.iterrows():
-        G.add_edge(row['parent_id'], row['child_id'],
-                  weight=row['consistency_weight'])
-    
-    # Calculate layout
-    if len(G.nodes) < 100:
-        pos = nx.spring_layout(G, k=3, iterations=50)
-    else:
-        pos = nx.kamada_kawai_layout(G)
-    
-    # Create edge traces
-    edge_x = []
-    edge_y = []
-    for edge in G.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_x.extend([x0, x1, None])
-        edge_y.extend([y0, y1, None])
-    
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=0.5, color='rgba(255,255,255,0.3)'),
-        hoverinfo='none',
-        mode='lines')
-    
-    # Create node traces
-    node_x = []
-    node_y = []
-    node_text = []
-    node_colors = []
-    
-    for node in G.nodes():
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        
-        concept = G.nodes[node]['concept']
-        category = G.nodes[node]['category']
-        consistency = G.nodes[node]['consistency']
-        
-        node_text.append(f"Node {node}<br>Concept: {concept}<br>Category: {category}<br>Consistency: {consistency:.3f}")
-        
-        # Color by category
-        if category == 'truth_bias':
-            node_colors.append('#ff6b6b')
-        elif category == 'persuasion_manipulation':
-            node_colors.append('#a55eea')
-        elif category == 'emotional_simulation':
-            node_colors.append('#fdcb6e')
-        elif category == 'logical_reasoning':
-            node_colors.append('#74b9ff')
-        else:
-            node_colors.append('#95a5a6')
-    
-    node_trace = go.Scatter(
-        x=node_x, y=node_y,
-        mode='markers',
-        hoverinfo='text',
-        text=node_text,
-        marker=dict(
-            showscale=True,
-            colorscale='Viridis',
-            size=12,
-            color=node_colors,
-            line_width=2,
-            line_color='white'))
-    
-    fig = go.Figure(data=[edge_trace, node_trace],
-                   layout=go.Layout(
-                       title=f'Neural Network Graph - {len(G.nodes)} Nodes, {len(G.edges)} Edges',
-                       showlegend=False,
-                       hovermode='closest',
-                       margin=dict(b=20,l=5,r=5,t=40),
-                       xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                       yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                       paper_bgcolor='rgba(0,0,0,0)',
-                       plot_bgcolor='rgba(0,0,0,0)',
-                       font=dict(color='white'))
-                   )
-    
-    return fig
 
 # Modern Dashboard Layout
 app.layout = html.Div([
