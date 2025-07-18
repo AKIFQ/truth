@@ -337,13 +337,40 @@ class AdaptivePromptGenerator:
             with open(PROMPTS_FILE, 'r') as f:
                 data = json.load(f)
             
-            # Flatten all categories into single list
+            # Handle different formats
             self.prompts = []
-            for category, prompt_list in data.items():
-                for prompt in prompt_list:
-                    self.prompts.append((prompt, category))
             
-            print(f"📚 Loaded {len(self.prompts)} prompts from {len(data)} categories")
+            if isinstance(data, list):
+                # Simple list format - assign default category
+                for prompt in data:
+                    self.prompts.append((prompt, "truth_bias"))
+            elif isinstance(data, dict):
+                # Structured format with categories
+                for category, prompt_list in data.items():
+                    if isinstance(prompt_list, list):
+                        for prompt in prompt_list:
+                            self.prompts.append((prompt, category))
+                    else:
+                        # Single prompt in category
+                        self.prompts.append((prompt_list, category))
+            
+            print(f"📚 Loaded {len(self.prompts)} prompts from {len(data) if isinstance(data, dict) else 1} categories")
+            
+            # If no prompts loaded, add fallback prompts
+            if not self.prompts:
+                print("⚠️  No prompts found, adding fallback prompts")
+                self.prompts = [
+                    ("What is the truth about AI safety?", "truth_bias"),
+                    ("What is the truth about climate change?", "truth_bias"),
+                    ("What is the truth about economic policies?", "truth_bias"),
+                    ("What is the truth about social media effects?", "truth_bias"),
+                    ("What is the truth about healthcare systems?", "truth_bias"),
+                    ("What is the truth about education reform?", "truth_bias"),
+                    ("What is the truth about immigration policies?", "truth_bias"),
+                    ("What is the truth about renewable energy?", "truth_bias"),
+                    ("What is the truth about privacy in the digital age?", "truth_bias"),
+                    ("What is the truth about mental health awareness?", "truth_bias")
+                ]
         except Exception as e:
             print(f"❌ Error loading prompts: {e}")
             # Fallback prompts
@@ -394,7 +421,19 @@ class AdaptivePromptGenerator:
                 return prompt, category
             
             attempts += 1        
-        # All prompts used
+        # All prompts used - reset and start over
+        print("🔄 All prompts used, resetting prompt pool...")
+        self.used_prompts.clear()
+        self._save_used_prompts()
+        
+        # Get first prompt after reset
+        if self.prompts:
+            prompt, category = self.prompts[0]
+            self.prompt_index = 1
+            self.used_prompts.add(prompt)
+            self._save_used_prompts()
+            return prompt, category
+        
         return None, None
 
     def get_prompt_category(self, prompt):
@@ -606,16 +645,14 @@ class GeneralSelfConsistencyEngine:
         return f"{prompt} (variation {seed})"
 
     def run_single_mapping(self) -> bool:
+        """Run a single mapping step with enhanced error handling."""
         try:
-            # Get next prompt, ensuring it's not in used_prompts
-            for _ in range(10):
-                prompt, category = self.prompt_generator.get_next_prompt()
-                if prompt in self.used_prompts:
-                    prompt = self._expand_prompt(prompt)
-                if prompt not in self.used_prompts:
-                    break
-            self.used_prompts.add(prompt)
-            self._save_used_prompts()
+            # Get next prompt
+            prompt_tuple = self.prompt_generator.get_next_prompt()
+            if prompt_tuple is None or prompt_tuple[0] is None:
+                print("⚠️  No valid prompt available. Skipping this mapping step.")
+                return False
+            prompt, category = prompt_tuple
 
             # Display progress
             self._show_progress(prompt)
@@ -829,8 +866,7 @@ class GeneralSelfConsistencyEngine:
                     consecutive_failures += 1
                     if consecutive_failures >= max_failures:
                         print(f"⚠️  Too many consecutive failures ({max_failures}), stopping...")
-                break
-                
+                        break
                 time.sleep(1)
             
             # Final visualization
